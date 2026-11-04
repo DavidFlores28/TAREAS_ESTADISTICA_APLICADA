@@ -1,0 +1,1207 @@
+---
+title: "Distribuciones Bernoulli y Binomial"
+lang: es
+---
+
+```{=html}
+<style>
+main.content {
+text-align: justify}
+</style>
+```
+
+```{r}
+#| label: setup
+#| include: false
+library(tidyverse)
+library(kableExtra)
+library(gridExtra)
+```
+
+## Distribución Bernoulli
+
+::: {#def-bernoulli}
+Una variable aleatoria $X$ sigue una **distribución de Bernoulli** con parámetro $p$ si puede tomar solo dos valores: 1 (éxito) con probabilidad $p$ y 0 (fracaso) con probabilidad $1-p$. La función de probabilidad está dada por:
+
+\begin{equation}
+f(x) = \begin{cases} 
+1-p & \text{si } x = 0 \\
+p & \text{si } x = 1 \\
+0 & \text{en otro caso}
+\end{cases}
+\end{equation}
+
+O de forma compacta: $f(x) = p^x(1-p)^{1-x}$ para $x \in \{0,1\}$
+
+A una variable aleatoria con distribución Bernoulli la denotaremos como $X \sim \text{Bernoulli}(p)$.
+:::
+
+## Características de la Distribución Bernoulli
+
+**Parámetros**
+
+- $p$: probabilidad de éxito, donde $0 \leq p \leq 1$
+
+**Parámetros Estadísticos**
+
+Esperanza (Media):
+
+\begin{equation}
+E(X) = p
+\end{equation}
+
+Varianza:
+
+\begin{equation}
+\text{Var}(X) = p(1-p)
+\end{equation}
+
+Desviación Estándar:
+
+\begin{equation}
+\sigma = \sqrt{p(1-p)}
+\end{equation}
+
+Función de Distribución:
+
+\begin{equation}
+F(x) = \begin{cases}
+0 & \text{si } x < 0 \\
+1-p & \text{si } 0 \leq x < 1 \\
+1 & \text{si } x \geq 1
+\end{cases}
+\end{equation}
+
+## Ejemplos de Bernoulli
+
+::: {exm-moneda}
+### Lanzamiento de una moneda
+
+Consideremos el lanzamiento de una moneda justa, donde "Cara" se considera un éxito (1) y "Sello" un fracaso (0). La probabilidad de obtener cara es $p = 0.5$.
+
+```{r}
+#| label: moneda-bernoulli
+#| code-fold: true
+#| fig-align: center
+
+
+# Moneda justa
+p_moneda <- 0.5
+
+# Crear tabla de probabilidades
+bernoulli_moneda <- data.frame(
+  Resultado = c("Sello (0)", "Cara (1)"),
+  Valor = c(0, 1),
+  Probabilidad = c(1-p_moneda, p_moneda)
+)
+
+kable(bernoulli_moneda, 
+      caption = "Distribución Bernoulli - Moneda justa (p = 0.5)",
+      align = "ccc") %>%
+  kable_styling(bootstrap_options = "striped")
+
+# Parámetros
+media_moneda <- p_moneda
+varianza_moneda <- p_moneda * (1 - p_moneda)
+desv_std_moneda <- sqrt(varianza_moneda)
+
+cat("Parámetros estadísticos:\n")
+cat("Media:", media_moneda, "\n")
+cat("Varianza:", varianza_moneda, "\n")
+cat("Desviación estándar:", desv_std_moneda, "\n")
+```
+:::
+
+::: {exm-difprob}
+### Variables aleatorias con diferentes probabilidades de éxito
+
+Consideremos variables aleatorias Bernoulli con diferentes valores de $p$, como se muestra en la siguiente tabla:
+
+```{r}
+#| label: ejemplos-bernoulli-multiple
+#| code-fold: true
+#| fig-align: center
+
+
+# Diferentes valores de p
+p_values <- c(0.1, 0.3, 0.5, 0.7, 0.9)
+
+# Crear data frame para visualización
+bernoulli_data <- data.frame()
+for(p in p_values) {
+  temp_data <- data.frame(
+    p = paste("p =", p),
+    x = c(0, 1),
+    probabilidad = c(1-p, p),
+    media = p,
+    varianza = p*(1-p)
+  )
+  bernoulli_data <- rbind(bernoulli_data, temp_data)
+}
+
+# Tabla de parámetros
+param_bernoulli <- data.frame(
+  p = p_values,
+  Media = p_values,
+  Varianza = p_values * (1 - p_values),
+  Desv_Std = sqrt(p_values * (1 - p_values))
+)
+
+kable(param_bernoulli, 
+      caption = "Parámetros de la distribución Bernoulli para diferentes valores de p",
+      digits = 4,
+      col.names = c("p", "Media", "Varianza", "Desv. Estándar")) %>%
+  kable_styling(bootstrap_options = "striped")
+```
+
+<br>
+
+**Visualización**
+
+```{r}
+#| label: grafico-bernoulli
+#| code-fold: true
+#| fig-align: center
+#| fig-cap: "Distribución Bernoulli para diferentes valores de p"
+ggplot(bernoulli_data, aes(x = factor(x), y = probabilidad, fill = factor(x))) +
+  geom_col(alpha = 0.7) +
+  geom_text(aes(label = round(probabilidad, 2)), vjust = -0.3) +
+  facet_wrap(~p, ncol = 5) +
+  scale_fill_manual(values = c("0" = "red", "1" = "blue")) +
+  labs(title = "Distribución de Bernoulli para diferentes valores de p",
+       x = "Valor (0 = Fracaso, 1 = Éxito)",
+       y = "Probabilidad",
+       fill = "Resultado") +
+  theme_minimal() +
+  theme(
+    legend.title = element_text(size=13, face="bold"),
+    legend.text = element_text(size=13),
+    plot.title = element_text(size=15, face="bold", hjust = 0.5),
+    plot.subtitle = element_text(size=13, hjust = 0.5),
+    axis.text.x=element_text(size=12),
+    axis.text.y=element_text(size=12),
+    axis.title.x = element_text(face="bold", size=13),
+    axis.title.y = element_text(face="bold", size=13)
+    # panel.grid.major.y = element_line(color = "#ECF0F1", linewidth = 0.5,
+    #   linetype = "dashed"),
+    # panel.grid.minor.y = element_blank(),
+    # panel.grid.major.x = element_blank(),
+    # panel.background = element_rect(fill = "#FAFAFA", color = NA),
+    # plot.background = element_rect(fill = "white", color = NA)
+  )
+```
+:::
+
+## Distribución Binomial
+
+::: {#def-binomial}
+Una variable aleatoria $X$ sigue una **distribución binomial** con parámetros $n$ y $p$ si representa el número de éxitos en $n$ ensayos independientes de Bernoulli, cada uno con probabilidad de éxito $p$. La función de probabilidad está dada por: $$f(x) = \binom{n}{x} p^x (1-p)^{n-x}$$
+
+para $x = 0, 1, 2, \ldots, n$, donde $\binom{n}{x} = \frac{n!}{x!(n-x)!}$. A una varible aleatoria con distribución binomial la denotaremos como: $$X \sim \text{Binomial}(n, p)$$
+:::
+
+## Características de la Distribución Binomial
+
+**Parámetros**
+
+- $n$: número de ensayos (entero positivo)
+- $p$: probabilidad de éxito en cada ensayo, donde $0 \leq p \leq 1$
+
+**Parámetros Estadísticos**
+
+Esperanza (Media): $$E(X) = np$$
+
+Varianza: $$\text{Var}(X) = np(1-p)$$
+
+Desviación Estándar: $$\sigma = \sqrt{np(1-p)}$$
+
+**Función de Distribución (Probabilidad Acumulada)**: $$F(x) = P(X \leq x) = \sum_{i=0}^{x} \binom{n}{i} p^i (1-p)^{n-i}$$
+
+## Ejemplos de Binomial
+
+::: {#exm-monedasagain}
+### Lanzamiento de monedas
+
+Supongamos que lanzamos una moneda justa 10 veces. Queremos encontrar la distribución del número de caras obtenidas.
+
+```{r}
+#| label: binomial-monedas
+#| code-fold: true
+#| fig-align: center
+
+
+# Parámetros
+n_monedas <- 10
+p_monedas <- 0.5
+
+# Calcular probabilidades
+k_values <- 0:n_monedas
+prob_binomial <- dbinom(k_values, n_monedas, p_monedas)
+
+# Crear data frame
+binomial_monedas <- data.frame(
+  Num_Caras = k_values,
+  Probabilidad = prob_binomial
+)
+
+# Mostrar tabla
+kable(binomial_monedas, 
+      caption = paste("Distribución Binomial - 10 lanzamientos de moneda (n =", n_monedas, ", p =", p_monedas, ")"),
+      digits = 4,
+      col.names = c("Número de Caras", "Probabilidad")) %>%
+  kable_styling(bootstrap_options = "striped")
+
+# Parámetros estadísticos
+media_monedas <- n_monedas * p_monedas
+varianza_monedas <- n_monedas * p_monedas * (1 - p_monedas)
+desv_std_monedas <- sqrt(varianza_monedas)
+
+cat("\nParámetros estadísticos:\n")
+cat("Media:", media_monedas, "\n")
+cat("Varianza:", varianza_monedas, "\n")
+cat("Desviación estándar:", round(desv_std_monedas, 4), "\n")
+```
+
+**Visualización de la distribución binomial**
+
+```{r}
+#| label: grafico-binomial-monedas
+#| fig-cap: "Distribución Binomial - 10 lanzamientos de moneda"
+#| code-fold: true
+#| fig-align: center
+
+
+ggplot(binomial_monedas, aes(x = Num_Caras, y = Probabilidad)) +
+  geom_col(fill = "steelblue", alpha = 0.7, width = 0.8) +
+  geom_text(aes(label = round(Probabilidad, 3)), vjust = -0.5, size = 3) +
+  geom_vline(xintercept = media_monedas, color = "red", linetype = "dashed", linewidth = 1) +
+  annotate("text", x = media_monedas + 2.5, y = max(prob_binomial) * 0.8, 
+           label = paste("Media =", media_monedas), color = "red") +
+  scale_x_continuous(breaks = k_values) +
+  labs(title = paste("Distribución Binomial(", n_monedas, ",", p_monedas, ")"),
+       x = "Número de Éxitos",
+       y = "Probabilidad") +
+  theme_minimal() +
+  theme(
+    legend.title = element_text(size=13, face="bold"),
+    legend.text = element_text(size=13),
+    plot.title = element_text(size=15, face="bold", hjust = 0.5),
+    plot.subtitle = element_text(size=13, hjust = 0.5),
+    axis.text.x=element_text(size=12),
+    axis.text.y=element_text(size=12),
+    axis.title.x = element_text(face="bold", size=13),
+    axis.title.y = element_text(face="bold", size=13)
+    # panel.grid.major.y = element_line(color = "#ECF0F1", linewidth = 0.5,
+    #   linetype = "dashed"),
+    # panel.grid.minor.y = element_blank(),
+    # panel.grid.major.x = element_blank(),
+    # panel.background = element_rect(fill = "#FAFAFA", color = NA),
+    # plot.background = element_rect(fill = "white", color = NA)
+  )
+```
+:::
+
+::: {#exm-calidad}
+### Control de calidad
+
+Un proceso de manufactura produce artículos defectuosos con probabilidad 0.05. Se toman muestras de 20 artículos.
+
+```{r}
+#| label: control-calidad
+#| code-fold: true
+#| fig-align: center
+
+
+# Parámetros
+n_articulos <- 20
+p_defecto <- 0.05
+
+# Probabilidades
+k_defectos <- 0:n_articulos
+prob_defectos <- dbinom(k_defectos, n_articulos, p_defecto)
+
+# Crear data frame
+calidad_data <- data.frame(
+  Defectos = k_defectos,
+  Probabilidad = prob_defectos
+)
+
+# Filtrar probabilidades significativas (> 0.001)
+calidad_filtrada <- calidad_data[calidad_data$Probabilidad > 0.001, ]
+
+kable(calidad_filtrada, 
+      caption = paste("Distribución Binomial - Control de calidad (n =", n_articulos, ", p =", p_defecto, ")"),
+      digits = 4,
+      col.names = c("Número de Defectos", "Probabilidad")) %>%
+  kable_styling(bootstrap_options = "striped")
+
+# Parámetros estadísticos
+media_defectos <- n_articulos * p_defecto
+varianza_defectos <- n_articulos * p_defecto * (1 - p_defecto)
+desv_std_defectos <- sqrt(varianza_defectos)
+
+cat("Parámetros estadísticos:\n")
+cat("Media:", media_defectos, "\n")
+cat("Varianza:", round(varianza_defectos, 4), "\n")
+cat("Desviación estándar:", round(desv_std_defectos, 4), "\n")
+
+# Probabilidades importantes
+prob_0_defectos <- dbinom(0, n_articulos, p_defecto)
+prob_max_2_defectos <- pbinom(2, n_articulos, p_defecto)
+prob_mas_3_defectos <- 1 - pbinom(3, n_articulos, p_defecto)
+
+cat("\nProbabilidades de interés:\n")
+cat("P(0 defectos):", round(prob_0_defectos, 4), "\n")
+cat("P(≤ 2 defectos):", round(prob_max_2_defectos, 4), "\n")
+cat("P(> 3 defectos):", round(prob_mas_3_defectos, 4), "\n")
+```
+
+**Visualización de la distribución binomial**
+
+```{r}
+#| label: grafico-calidad
+#| code-fold: true
+#| fig-align: center
+#| fig-cap: "Distribución Binomial - Control de calidad"
+
+
+ggplot(calidad_data[1:8, ], aes(x = Defectos, y = Probabilidad)) +
+  geom_col(fill = "darkgreen", alpha = 0.7, width = 0.8) +
+  geom_text(aes(label = round(Probabilidad, 4)), vjust = -0.5, size = 3) +
+  geom_vline(xintercept = media_defectos, color = "red", linetype = "dashed", linewidth = 1) +
+  annotate("text", x = media_defectos + 1.2, y = max(prob_defectos) * 0.6, 
+           label = paste("Media =", media_defectos), color = "red") +
+  scale_x_continuous(breaks = 0:7) +
+  labs(title = paste("Distribución Binomial(", n_articulos, ",", p_defecto, ")"),
+       subtitle = "Control de calidad - Artículos defectuosos",
+       x = "Número de Artículos Defectuosos",
+       y = "Probabilidad") +
+  theme_minimal() +
+  theme(
+    legend.title = element_text(size=13, face="bold"),
+    legend.text = element_text(size=13),
+    plot.title = element_text(size=15, face="bold", hjust = 0.5),
+    plot.subtitle = element_text(size=13, hjust = 0.5),
+    axis.text.x=element_text(size=12),
+    axis.text.y=element_text(size=12),
+    axis.title.x = element_text(face="bold", size=13),
+    axis.title.y = element_text(face="bold", size=13)
+    # panel.grid.major.y = element_line(color = "#ECF0F1", linewidth = 0.5,
+    #   linetype = "dashed"),
+    # panel.grid.minor.y = element_blank(),
+    # panel.grid.major.x = element_blank(),
+    # panel.background = element_rect(fill = "#FAFAFA", color = NA),
+    # plot.background = element_rect(fill = "white", color = NA)
+  )
+```
+:::
+
+## Comparación: Efecto de los Parámetros
+
+A continuación, exploramos cómo varía la distribución binomial al modificar los parámetros $n$ y $p$.
+
+### Efecto del parámetro n (fijo p = 0.3)
+
+```{r}
+#| label: efecto-n
+#| code-fold: true
+#| fig-align: center
+
+# Diferentes valores de n con p fijo
+n_vals <- c(5, 10, 20, 50)
+p_fijo <- 0.3
+
+# Crear data frame para comparación
+comp_n_data <- data.frame()
+for(n in n_vals) {
+  k_vals <- 0:n
+  probs <- dbinom(k_vals, n, p_fijo)
+  temp_data <- data.frame(
+    n = paste("n =", n),
+    k = k_vals,
+    probabilidad = probs,
+    media = n * p_fijo,
+    varianza = n * p_fijo * (1 - p_fijo)
+  )
+  comp_n_data <- rbind(comp_n_data, temp_data)
+}
+
+# Filtrar para visualización (solo valores con probabilidad > 0.01)
+comp_n_filtered <- comp_n_data[comp_n_data$probabilidad > 0.01, ]
+
+ggplot(comp_n_filtered, aes(x = k, y = probabilidad)) +
+  geom_col(fill = "purple", alpha = 0.7, width = 0.8) +
+  geom_vline(aes(xintercept = media), color = "blue", linetype = "dashed", linewidth=1) +
+  facet_wrap(~n, scales = "free") +
+  labs(title = paste("Efecto del parámetro n (p =", p_fijo, ")"),
+       x = "Número de Éxitos",
+       y = "Probabilidad") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+### Efecto del parámetro p (fijo n = 10)
+
+```{r}
+#| label: efecto-p
+#| code-fold: true
+#| fig-align: center 
+#| fig-cap: "Efecto del parámetro p en la distribución binomial"
+# Diferentes valores de p con n fijo
+p_vals <- c(0.1, 0.3, 0.5, 0.7, 0.9)
+n_fijo <- 10
+
+# Crear data frame para comparación
+comp_p_data <- data.frame()
+for(p in p_vals) {
+  k_vals <- 0:n_fijo
+  probs <- dbinom(k_vals, n_fijo, p)
+  temp_data <- data.frame(
+    p = paste("p =", p),
+    k = k_vals,
+    probabilidad = probs,
+    media = n_fijo * p,
+    varianza = n_fijo * p * (1 - p)
+  )
+  comp_p_data <- rbind(comp_p_data, temp_data)
+}
+
+ggplot(comp_p_data, aes(x = k, y = probabilidad)) +
+  geom_col(fill = "orange", alpha = 0.7, width = 0.8) +
+  geom_vline(aes(xintercept = media), color = "blue", linetype = "dashed", linewidth=1) +
+  facet_wrap(~p, scales = "free_y") +
+  labs(title = paste("Efecto del parámetro p (n =", n_fijo, ")"),
+       x = "Número de Éxitos",
+       y = "Probabilidad") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+## Simulación Binomial
+
+Se realiza una simulación de 1000 experimentos de una variable aleatoria con distribución $Binomial(n=15, p=0.4)$ y se comparan las estadísticas observadas (media y varianza) con las teóricas, así como la distribución observada con la teórica.
+
+```{r}
+#| label: simulacion-binomial
+#| code-fold: true
+
+n_trials <- 15
+p_sim_bin <- 0.4
+n_sim_bin <- 1000
+
+# Generar datos
+datos_binomial <- rbinom(n_sim_bin, n_trials, p_sim_bin)
+
+# Calcular estadísticas observadas
+media_obs_bin <- mean(datos_binomial)
+var_obs_bin <- var(datos_binomial)
+
+# Valores teóricos
+media_teo_bin <- n_trials * p_sim_bin
+var_teo_bin <- n_trials * p_sim_bin * (1 - p_sim_bin)
+
+cat("Media teórica:", media_teo_bin, "| Media observada:", round(media_obs_bin, 4), "\n")
+cat("Varianza teórica:", var_teo_bin, "| Varianza observada:", round(var_obs_bin, 4), "\n")
+
+# Comparar distribuciones
+freq_obs_bin <- table(datos_binomial) / n_sim_bin
+k_sim <- as.numeric(names(freq_obs_bin))
+freq_teo_bin <- dbinom(k_sim, n_trials, p_sim_bin)
+
+comparacion_bin <- data.frame(
+  k = k_sim,
+  Freq_Observada = as.numeric(freq_obs_bin),
+  Prob_Teorica = freq_teo_bin
+)
+
+kable(head(comparacion_bin, 10), 
+      caption = "Comparación frecuencias observadas vs probabilidades teóricas",
+      digits = 4,
+      col.names = c("k", "Freq. Observada", "Prob. Teórica")) %>%
+  kable_styling(bootstrap_options = "striped")
+```
+
+**Visualización comparativa**
+
+```{r}
+#| label: grafico-comparacion-sim
+#| code-fold: true
+#| fig-align: center
+#| fig-cap: "Comparación entre distribución teórica y simulada"
+library(tidyr)
+
+# Preparar datos para visualización
+comp_sim_long <- comparacion_bin %>%
+  pivot_longer(cols = c(Freq_Observada, Prob_Teorica),
+               names_to = "Tipo",
+               values_to = "Probabilidad") %>%
+  mutate(Tipo = case_when(
+    Tipo == "Freq_Observada" ~ "Simulada",
+    Tipo == "Prob_Teorica" ~ "Teórica"
+  ))
+
+ggplot(comp_sim_long, aes(x = k, y = Probabilidad, fill = Tipo)) +
+  geom_col(position = "dodge", alpha = 0.7) +
+  scale_fill_manual(values = c("Teórica" = "blue", "Simulada" = "red")) +
+  labs(title = paste("Comparación: Binomial(", n_trials, ",", p_sim_bin, ") - ", n_sim_bin, "simulaciones"),
+       x = "Número de Éxitos",
+       y = "Probabilidad/Frecuencia",
+       fill = "Distribución") +
+  theme_minimal() +
+  theme(
+    legend.title = element_text(size=13, face="bold"),
+    legend.text = element_text(size=13),
+    plot.title = element_text(size=15, face="bold", hjust = 0.5),
+    plot.subtitle = element_text(size=13, hjust = 0.5),
+    axis.text.x=element_text(size=12),
+    axis.text.y=element_text(size=12),
+    axis.title.x = element_text(face="bold", size=13),
+    axis.title.y = element_text(face="bold", size=13)
+    # panel.grid.major.y = element_line(color = "#ECF0F1", linewidth = 0.5,
+    #   linetype = "dashed"),
+    # panel.grid.minor.y = element_blank(),
+    # panel.grid.major.x = element_blank(),
+    # panel.background = element_rect(fill = "#FAFAFA", color = NA),
+    # plot.background = element_rect(fill = "white", color = NA)
+  )
+```
+
+## Relación entre Bernoulli y Binomial
+
+::: {#thm-bernoulli-binomial}
+Si $X_1, X_2, \ldots, X_n$ son variables aleatorias independientes e idénticamente distribuidas con $X_i \sim \text{Bernoulli}(p)$, entonces:
+
+$$X = \sum_{i=1}^{n} X_i \sim \text{Binomial}(n,p)$$
+:::
+
+**Verificación mediante una simulación**
+
+```{r}
+#| label: relacion-bernoulli-binomial
+#| code-fold: true
+#| fig-align: center
+
+n_exp <- 8
+p_exp <- 0.6
+n_sim_rel <- 1000
+
+# Método 1: Generar directamente de Binomial
+binomial_directo <- rbinom(n_sim_rel, n_exp, p_exp)
+
+# Método 2: Sumar n variables Bernoulli independientes
+suma_bernoulli <- replicate(n_sim_rel, {
+  bernoulli_vars <- rbinom(n_exp, 1, p_exp)
+  sum(bernoulli_vars)
+})
+
+# Comparar distribuciones
+comparacion_relacion <- data.frame(
+  Binomial_Directo = binomial_directo,
+  Suma_Bernoulli = suma_bernoulli
+)
+
+# Visualización comparativa
+comp_rel_long <- comparacion_relacion %>%
+  mutate(id = row_number()) %>%
+  pivot_longer(cols = c(Binomial_Directo, Suma_Bernoulli),
+               names_to = "Metodo",
+               values_to = "Valor")
+
+ggplot(comp_rel_long, aes(x = Valor, fill = Metodo)) +
+  geom_histogram(position = "dodge", center = min(comp_rel_long$Valor), binwidth=1) + 
+  scale_fill_manual(values = c("Binomial_Directo" = "blue", "Suma_Bernoulli" = "red")) +
+  scale_x_continuous(breaks = 0:(n_exp)) +
+  labs(title = "Equivalencia: Binomial vs Suma de Bernoulli",
+       subtitle = paste("n =", n_exp, ", p =", p_exp),
+       x = "Valor",
+       y = "Frecuencia",
+       fill = "Método") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position = "bottom")
+```
+
+## Aproximaciones
+
+### Aproximación Normal
+
+Cuando $n$ es grande y $p$ no está muy cerca de 0 o 1, la distribución binomial se puede aproximar con una normal:
+
+$$\text{Binomial}(n,p) \approx \text{Normal}(np, np(1-p))$$
+
+**Regla práctica**: $np \geq 5$ y $n(1-p) \geq 5$
+
+```{r}
+#| label: aproximacion-normal
+#| code-fold: true
+#| fig-align: center
+
+
+# Parámetros para aproximación normal
+n_aprox <- 50
+p_aprox <- 0.4
+
+# Verificar condiciones
+condicion1 <- n_aprox * p_aprox >= 5
+condicion2 <- n_aprox * (1 - p_aprox) >= 5
+
+cat("Condiciones para aproximación normal:\n")
+cat("np =", n_aprox * p_aprox, "≥ 5:", condicion1, "\n")
+cat("n(1-p) =", n_aprox * (1-p_aprox), "≥ 5:", condicion2, "\n")
+
+if(condicion1 & condicion2) {
+  # Calcular probabilidades exactas y aproximadas
+  k_aprox <- 0:n_aprox
+  prob_exacta <- dbinom(k_aprox, n_aprox, p_aprox)
+  
+  # Aproximación normal (con corrección de continuidad)
+  media_normal <- n_aprox * p_aprox
+  var_normal <- n_aprox * p_aprox * (1 - p_aprox)
+  sd_normal <- sqrt(var_normal)
+  
+  # Crear data frame para comparación
+  aprox_data <- data.frame(
+    k = k_aprox,
+    Binomial = prob_exacta,
+    Normal = dnorm(k_aprox, media_normal, sd_normal)
+  )
+  
+  # Filtrar valores significativos
+  aprox_filtered <- aprox_data[aprox_data$Binomial > 0.001, ]
+  
+  # Visualización
+  aprox_long <- aprox_filtered %>%
+    pivot_longer(cols = c(Binomial, Normal),
+                 names_to = "Distribucion",
+                 values_to = "Densidad")
+  
+  ggplot(aprox_long, aes(x = k, y = Densidad, color = Distribucion)) +
+    geom_line(linewidth = 1) +
+    geom_point(size = 2) +
+    scale_color_manual(values = c("Binomial" = "blue", "Normal" = "red")) +
+    labs(title = "Aproximación Normal a la Binomial",
+         subtitle = paste("Binomial(", n_aprox, ",", p_aprox, ") vs Normal(", media_normal, ",", round(sd_normal^2, 2), ")"),
+         x = "k",
+         y = "Densidad de Probabilidad",
+         color = "Distribución") +
+    theme_minimal() +
+  theme(
+    legend.title = element_text(size=13, face="bold"),
+    legend.text = element_text(size=13),
+    legend.position = "bottom",
+    plot.title = element_text(size=15, face="bold", hjust = 0.5),
+    plot.subtitle = element_text(size=13, hjust = 0.5),
+    axis.text.x=element_text(size=12),
+    axis.text.y=element_text(size=12),
+    axis.title.x = element_text(face="bold", size=13),
+    axis.title.y = element_text(face="bold", size=13)
+    # panel.grid.major.y = element_line(color = "#ECF0F1", linewidth = 0.5,
+    #   linetype = "dashed"),
+    # panel.grid.minor.y = element_blank(),
+    # panel.grid.major.x = element_blank(),
+    # panel.background = element_rect(fill = "#FAFAFA", color = NA),
+    # plot.background = element_rect(fill = "white", color = NA)
+  )
+}
+```
+
+
+### Teorema Central del Límite
+
+Se generan $k=1000$ muestras de tamaño 50 de una distribución binomial con parámetros $n=20$ y $p=0.3$. Se En este caso la esperanza es $\mu = np = 20 \times 0.3 = 6$ y la varianza es $\sigma^2 = np(1-p) = 20 \times 0.3 \times 0.7 = 4.2$. Luego, la media muestral
+
+\begin{equation}
+\bar{X}_{50} = \frac{1}{50} \sum_{i=1}^{50} X_i
+\end{equation}
+
+Tendrá aproximadamente la siguiente distribución:
+
+\begin{equation}
+\bar{X}_{50} \sim N\left(6, \frac{4.2}{50}\right)
+\end{equation}
+
+
+```{r}
+#| code-fold: true
+#| label: limite-central-binomial
+#| fig-width: 8
+#| fig-height: 6
+#| fig-align: "center"
+#| fig-cap: "Verificación del Teorema Central del Límite"
+# Simular medias muestrales
+
+k_muestra <- 1000
+n_muestra <- 50
+
+n_binomial <- 20
+p_binomial <- 0.3
+
+medias_muestrales <- replicate(k_muestra, {
+  muestra <- rbinom(n_muestra, n_binomial, p_binomial)
+  mean(muestra)
+})
+
+# Crear histograma
+hist_data <- data.frame(Medias = medias_muestrales)
+
+ggplot(hist_data) +
+  geom_histogram(aes(x=Medias, after_stat(density)), bins = 30, 
+                 fill = "lightblue", alpha = 0.7, color = "black") +
+  geom_density(aes(x = Medias), color = "red", linewidth = 1) +
+  geom_function(fun = dnorm, args = list(mean = n_binomial * p_binomial, 
+                                 sd = sqrt(4.2/50)), 
+                color = "darkgreen", linetype = "dashed", linewidth = 1) +
+  geom_vline(xintercept = mean(medias_muestrales), 
+             color = "blue", linetype = "dashed", linewidth = 1) +
+  labs(title = "Distribución de Medias Muestrales",
+       subtitle = paste("N =", n_muestra, " de una v.a. binomial(20,0.3)"),
+       x = "Media Muestral",
+       y = "Densidad") +
+  theme_minimal() +
+  theme(
+    legend.title = element_text(size=13, face="bold"),
+    legend.text = element_text(size=13),
+    plot.title = element_text(size=15, face="bold", hjust = 0.5),
+    plot.subtitle = element_text(size=13, hjust = 0.5),
+    axis.text.x=element_text(size=12),
+    axis.text.y=element_text(size=12),
+    axis.title.x = element_text(face="bold", size=13),
+    axis.title.y = element_text(face="bold", size=13)
+    # panel.grid.major.y = element_line(color = "#ECF0F1", linewidth = 0.5,
+    #   linetype = "dashed"),
+    # panel.grid.minor.y = element_blank(),
+    # panel.grid.major.x = element_blank(),
+    # panel.background = element_rect(fill = "#FAFAFA", color = NA),
+    # plot.background = element_rect(fill = "white", color = NA)
+  )
+
+# Estadísticas
+cat("Media teórica:", n_binomial * p_binomial, "\n")
+cat("Media observada:", round(mean(medias_muestrales), 4), "\n")
+cat("Varianza teórica de la media:", 4.2/50, "\n")
+cat("Varianza observada de la media:", round(var(medias_muestrales), 4), "\n")
+```
+
+## Aplicaciones Prácticas
+
+::: {#exm-medicina}
+### Medicina - Efectividad de Tratamiento
+
+Un nuevo medicamento tiene una probabilidad de 0.8 de curar una enfermedad. Se prueba en 25 pacientes.
+
+```{r}
+#| label: aplicacion-medicina
+#| code-fold: true
+#| fig-align: center
+
+
+# Parámetros
+n_pacientes <- 25
+p_cura <- 0.8
+
+# Preguntas de interés
+# 1. ¿Cuál es la probabilidad de que exactamente 20 pacientes se curen?
+prob_20_curas <- dbinom(20, n_pacientes, p_cura)
+
+# 2. ¿Cuál es la probabilidad de que al menos 22 pacientes se curen?
+prob_min_22 <- 1 - pbinom(21, n_pacientes, p_cura)
+
+# 3. ¿Cuál es la probabilidad de que entre 18 y 22 pacientes se curen?
+prob_18_22 <- pbinom(22, n_pacientes, p_cura) - pbinom(17, n_pacientes, p_cura)
+
+# Parámetros estadísticos
+media_curas <- n_pacientes * p_cura
+varianza_curas <- n_pacientes * p_cura * (1 - p_cura)
+desv_std_curas <- sqrt(varianza_curas)
+
+cat("Aplicación Médica - Efectividad del tratamiento:\n")
+cat("Parámetros: n =", n_pacientes, ", p =", p_cura, "\n\n")
+cat("Estadísticas esperadas:\n")
+cat("Número esperado de curas:", media_curas, "\n")
+cat("Varianza:", varianza_curas, "\n")
+cat("Desviación estándar:", round(desv_std_curas, 4), "\n\n")
+cat("Probabilidades de interés:\n")
+cat("P(exactamente 20 curas):", round(prob_20_curas, 4), "\n")
+cat("P(al menos 22 curas):", round(prob_min_22, 4), "\n")
+cat("P(entre 18 y 22 curas):", round(prob_18_22, 4), "\n")
+
+# Visualización
+k_medicina <- 0:n_pacientes
+prob_medicina <- dbinom(k_medicina, n_pacientes, p_cura)
+medicina_data <- data.frame(k = k_medicina, probabilidad = prob_medicina)
+
+ggplot(medicina_data, aes(x = k, y = probabilidad)) +
+  geom_col(fill = "darkblue", alpha = 0.7, width = 0.8) +
+  geom_vline(xintercept = media_curas, color = "red", linetype = "dashed", size = 1) +
+  geom_vline(xintercept = c(18, 22), color = "orange", linetype = "dotted", size = 1) +
+  annotate("text", x = media_curas + 1.5, y = max(prob_medicina) * 0.8, 
+           label = paste("E(X) =", media_curas), color = "red") +
+  annotate("rect", xmin = 18, xmax = 22, ymin = 0, ymax = Inf, 
+           alpha = 0.2, fill = "orange") +
+  labs(title = "Distribución del Número de Pacientes Curados",
+       subtitle = paste("Binomial(", n_pacientes, ",", p_cura, ")"),
+       x = "Número de Pacientes Curados",
+       y = "Probabilidad") +
+  theme_minimal() +
+  theme(
+    legend.title = element_text(size=13, face="bold"),
+    legend.text = element_text(size=13),
+    plot.title = element_text(size=15, face="bold", hjust = 0.5),
+    plot.subtitle = element_text(size=13, hjust = 0.5),
+    axis.text.x=element_text(size=12),
+    axis.text.y=element_text(size=12),
+    axis.title.x = element_text(face="bold", size=13),
+    axis.title.y = element_text(face="bold", size=13)
+    # panel.grid.major.y = element_line(color = "#ECF0F1", linewidth = 0.5,
+    #   linetype = "dashed"),
+    # panel.grid.minor.y = element_blank(),
+    # panel.grid.major.x = element_blank(),
+    # panel.background = element_rect(fill = "#FAFAFA", color = NA),
+    # plot.background = element_rect(fill = "white", color = NA)
+  )
+```
+:::
+
+## Ejercicios Propuestos
+
+```{r}
+#| label: sol-tema
+#| include: false
+
+# Tema común para las gráficas de los ejercicios
+tema_ej <- theme_minimal() +
+  theme(
+    legend.title = element_text(size=13, face="bold"),
+    legend.text = element_text(size=13),
+    plot.title = element_text(size=15, face="bold", hjust = 0.5),
+    plot.subtitle = element_text(size=13, hjust = 0.5),
+    axis.text.x=element_text(size=12),
+    axis.text.y=element_text(size=12),
+    axis.title.x = element_text(face="bold", size=13),
+    axis.title.y = element_text(face="bold", size=13)
+  )
+
+# Ancho de barra para los histogramas de medias muestrales.
+# Las medias de n enteros avanzan de 1/n en 1/n, así que se usa un múltiplo
+# impar de 1/n para que las barras no queden con huecos.
+ancho_hist <- function(medias, n, barras = 25) {
+  paso <- 1 / n
+  m <- ceiling(diff(range(medias)) / barras / paso)
+  if (m %% 2 == 0) m <- m + 1
+  m * paso
+}
+```
+
+::: {#exr-binomial-medicamento}
+Un medicamento tiene efectividad del 85%. Se administra a 20 pacientes. 
+
+a) Brindar la gráfica de la función de probabilidad considerando $X\sim \text{Binomial}(20, 0.85)$. 
+
+b) Proporcionar la esperanza, varianza y desviación estándar.
+
+c) Realiza una simulación con 1000 experimentos y compara los resultados con los valores teóricos.
+
+:::
+
+
+**Solución**
+
+**a)** Gráfica de la función de probabilidad de $X\sim \text{Binomial}(20, 0.85)$.
+
+```{r}
+#| label: sol-binom-med-a
+#| fig-align: center
+
+n_med <- 20
+p_med <- 0.85
+x_med <- 0:n_med
+
+df_med <- data.frame(x = x_med, prob = dbinom(x_med, n_med, p_med))
+
+ggplot(df_med, aes(x = x, y = prob, fill = prob)) +
+  geom_col(width = 0.8, color = "white") +
+  geom_text(data = subset(df_med, prob > 0.005), aes(label = round(prob, 3)),
+            vjust = -0.4, size = 3.3) +
+  scale_fill_gradient(low = "#4FC3F7", high = "#7B1FA2", guide = "none") +
+  scale_x_continuous(breaks = x_med) +
+  labs(title = "Función de probabilidad: Binomial(20, 0.85)",
+       subtitle = "Número de pacientes en los que funciona el medicamento",
+       x = "Número de pacientes curados", y = "Probabilidad") +
+  tema_ej
+```
+
+**b)** Esperanza, varianza y desviación estándar.
+
+```{r}
+#| label: sol-binom-med-b
+
+esperanza_med <- n_med * p_med
+varianza_med <- n_med * p_med * (1 - p_med)
+desv_med <- sqrt(varianza_med)
+
+data.frame(
+  Medida = c("Esperanza: E(X) = np", "Varianza: Var(X) = np(1-p)", "Desviación estándar"),
+  Valor = c(esperanza_med, varianza_med, desv_med)
+) |>
+  kable(digits = 4, caption = "Valores teóricos de la Binomial(20, 0.85)") |>
+  kable_styling(bootstrap_options = "striped")
+```
+
+**c)** Simulación de 1000 experimentos y comparación con los valores teóricos.
+
+```{r}
+#| label: sol-binom-med-c
+#| fig-align: center
+
+set.seed(2026)
+n_sim_med <- 1000
+sim_med <- rbinom(n_sim_med, n_med, p_med)
+
+data.frame(
+  Medida = c("Media", "Varianza", "Desviación estándar"),
+  Teórico = c(esperanza_med, varianza_med, desv_med),
+  Simulado = c(mean(sim_med), var(sim_med), sd(sim_med))
+) |>
+  kable(digits = 4, caption = "Valores teóricos contra valores simulados") |>
+  kable_styling(bootstrap_options = "striped")
+
+# Comparación de las distribuciones
+freq_med <- as.numeric(table(factor(sim_med, levels = x_med))) / n_sim_med
+
+df_comp_med <- data.frame(
+  x = rep(x_med, 2),
+  prob = c(dbinom(x_med, n_med, p_med), freq_med),
+  tipo = rep(c("Teórica", "Simulada"), each = length(x_med))
+)
+
+ggplot(subset(df_comp_med, x >= 10), aes(x = x, y = prob, fill = tipo)) +
+  geom_col(position = "dodge", width = 0.75, alpha = 0.9) +
+  scale_fill_manual(values = c("Teórica" = "#1E88E5", "Simulada" = "#FB8C00")) +
+  scale_x_continuous(breaks = 10:20) +
+  labs(title = "Binomial(20, 0.85): teórica contra simulada",
+       subtitle = "1000 experimentos",
+       x = "Número de pacientes curados", y = "Probabilidad / Frecuencia relativa",
+       fill = "Distribución") +
+  tema_ej
+```
+
+**Conclusión:** En la simulación la media salió `r round(mean(sim_med), 2)` y la varianza `r round(var(sim_med), 2)`, y los valores teóricos son `r round(esperanza_med, 2)` y `r round(varianza_med, 2)`. Las barras naranjas (simuladas) tienen casi la misma forma que las azules (teóricas); las pequeñas diferencias se deben al azar de la simulación.
+
+
+::: {#exr-simulacion_teorema}
+Verificar el siguiente teorema mediante simulación.
+
+Sean $X$ y $Y$ dos variables aleatorias independientes con distribución $bin(n, p)$, y $bin(m, p)$, respectivamente. Entonces la variable $X+Y$ tiene distribución $bin(n+m, p)$.
+:::
+
+
+**Solución**
+
+Se hacen 10,000 simulaciones de $X\sim bin(n,p)$ y $Y\sim bin(m,p)$ independientes, se suman, y se compara el resultado con la $bin(n+m,p)$. Se prueba con tres casos distintos.
+
+```{r}
+#| label: sol-binom-suma
+#| fig-align: center
+#| fig-width: 11
+#| fig-height: 4.5
+
+set.seed(2026)
+n_sim_s <- 10000
+
+casos_s <- data.frame(n = c(10, 5, 20), m = c(15, 8, 30), p = c(0.4, 0.7, 0.2))
+
+comp_s <- data.frame()
+stats_s <- data.frame()
+
+for (i in 1:nrow(casos_s)) {
+  n_i <- casos_s$n[i]
+  m_i <- casos_s$m[i]
+  p_i <- casos_s$p[i]
+
+  X <- rbinom(n_sim_s, n_i, p_i)
+  Y <- rbinom(n_sim_s, m_i, p_i)
+  S <- X + Y
+
+  caso <- paste0("bin(", n_i, ", ", p_i, ") + bin(", m_i, ", ", p_i, ")")
+  k <- 0:(n_i + m_i)
+
+  comp_s <- rbind(comp_s, data.frame(
+    caso = caso, k = k,
+    simulada = as.numeric(table(factor(S, levels = k))) / n_sim_s,
+    teorica = dbinom(k, n_i + m_i, p_i)
+  ))
+
+  stats_s <- rbind(stats_s, data.frame(
+    Caso = caso,
+    `Media simulada` = mean(S),
+    `Media teórica` = (n_i + m_i) * p_i,
+    `Varianza simulada` = var(S),
+    `Varianza teórica` = (n_i + m_i) * p_i * (1 - p_i),
+    check.names = FALSE
+  ))
+}
+
+kable(stats_s, digits = 3, caption = "X + Y simulada contra la bin(n+m, p) teórica") |>
+  kable_styling(bootstrap_options = "striped")
+
+comp_s$caso <- factor(comp_s$caso, levels = unique(comp_s$caso))
+
+ggplot(subset(comp_s, teorica > 0.0005 | simulada > 0.0005), aes(x = k)) +
+  geom_col(aes(y = simulada), fill = "#FFA726", alpha = 0.9) +
+  geom_line(aes(y = teorica), color = "#D81B60", linewidth = 1) +
+  geom_point(aes(y = teorica), color = "#D81B60", size = 1.8) +
+  facet_wrap(~caso, scales = "free") +
+  labs(title = "Suma de dos binomiales independientes con la misma p",
+       subtitle = "Barras naranjas: X + Y simulada | Línea rosa: probabilidades de la bin(n+m, p)",
+       x = "Valor de X + Y", y = "Probabilidad") +
+  tema_ej
+```
+
+**Conclusión:** En los tres casos las barras de $X+Y$ siguen la línea de la binomial con $n+m$ ensayos, y las medias y varianzas simuladas son casi iguales a $(n+m)p$ y $(n+m)p(1-p)$. Con esto se comprueba que el teorema se cumple.
+
+
+
+::: {#exr-aproximacion_normal}
+
+Considerando una distribución binomial con parámetros $n=100$ y $p=0.3$, verifica si se cumplen las condiciones para la aproximación normal. Realiza la comparación entre la distribución binomial y su aproximación normal.
+
+:::
+
+
+**Solución**
+
+Primero se revisan las condiciones para usar la aproximación normal:
+
+```{r}
+#| label: sol-binom-aprox-cond
+
+n_ap <- 100
+p_ap <- 0.3
+
+cat("Condiciones para la aproximación normal:\n")
+cat("np =", n_ap * p_ap, "≥ 5:", n_ap * p_ap >= 5, "\n")
+cat("n(1-p) =", n_ap * (1 - p_ap), "≥ 5:", n_ap * (1 - p_ap) >= 5, "\n")
+
+mu_ap <- n_ap * p_ap
+var_ap <- n_ap * p_ap * (1 - p_ap)
+sigma_ap <- sqrt(var_ap)
+cat("\nAproximación: Normal con media", mu_ap, "y varianza", var_ap, "\n")
+```
+
+Ahora se compara la binomial con la normal:
+
+```{r}
+#| label: sol-binom-aprox-graf
+#| fig-align: center
+
+df_ap <- data.frame(k = 0:n_ap, binomial = dbinom(0:n_ap, n_ap, p_ap))
+
+ggplot(subset(df_ap, k >= 12 & k <= 48), aes(x = k, y = binomial)) +
+  geom_col(aes(fill = "Binomial(100, 0.3)"), alpha = 0.85, width = 0.85) +
+  stat_function(aes(color = "Normal(30, 21)"), inherit.aes = FALSE, fun = dnorm,
+                args = list(mean = mu_ap, sd = sigma_ap), linewidth = 1.5) +
+  scale_fill_manual(values = c("Binomial(100, 0.3)" = "#26C6DA")) +
+  scale_color_manual(values = c("Normal(30, 21)" = "#E91E63")) +
+  labs(title = "Aproximación normal a la Binomial(100, 0.3)",
+       x = "k", y = "Probabilidad / Densidad", fill = NULL, color = NULL) +
+  tema_ej +
+  theme(legend.position = "bottom")
+```
+
+También se comparan algunas probabilidades exactas con las que da la normal, sin y con corrección de continuidad (sumar o restar 0.5 al valor):
+
+```{r}
+#| label: sol-binom-aprox-tabla
+
+tabla_ap <- data.frame(
+  Evento = c("P(X ≤ 25)", "P(X ≥ 35)", "P(25 ≤ X ≤ 35)"),
+  Exacta = c(pbinom(25, n_ap, p_ap),
+             1 - pbinom(34, n_ap, p_ap),
+             pbinom(35, n_ap, p_ap) - pbinom(24, n_ap, p_ap)),
+  Sin = c(pnorm(25, mu_ap, sigma_ap),
+          1 - pnorm(35, mu_ap, sigma_ap),
+          pnorm(35, mu_ap, sigma_ap) - pnorm(25, mu_ap, sigma_ap)),
+  Con = c(pnorm(25.5, mu_ap, sigma_ap),
+          1 - pnorm(34.5, mu_ap, sigma_ap),
+          pnorm(35.5, mu_ap, sigma_ap) - pnorm(24.5, mu_ap, sigma_ap))
+)
+
+kable(tabla_ap, digits = 4,
+      col.names = c("Evento", "Binomial (exacta)", "Normal sin corrección", "Normal con corrección"),
+      caption = "Probabilidades exactas contra la aproximación normal") |>
+  kable_styling(bootstrap_options = "striped")
+```
+
+**Conclusión:** Se cumplen las dos condiciones ($np = 30$ y $n(1-p) = 70$, los dos mayores que 5), así que se puede usar la aproximación normal con media 30 y varianza 21. En la gráfica la curva rosa sigue bien la forma de las barras, y en la tabla se ve que con la corrección de continuidad los resultados quedan más cerca de los valores exactos.
+
+
+
+::: {#exr-tcl_binomial}
+
+Generar $k=1000$ muestras de tamaño 30 de una distribución binomial con parámetros $n=10$ y $p=0.7$. Verificar el Teorema Central del Límite para las medias muestrales.
+
+:::
+
+
+**Solución**
+
+Se generan $k=1000$ muestras de tamaño $n=30$ de una $\text{Binomial}(10, 0.7)$. Para esta distribución $\mu = np = 7$ y $\sigma^2 = np(1-p) = 2.1$. Entonces la media muestral debería tener aproximadamente esta distribución:
+
+\begin{equation}
+\bar{X}_{30} \sim N\left(7, \frac{2.1}{30}\right) = N(7, 0.07)
+\end{equation}
+
+```{r}
+#| label: sol-binom-tcl
+#| fig-align: center
+#| fig-width: 11
+#| fig-height: 5
+
+set.seed(2026)
+k_tcl <- 1000
+n_tcl <- 30
+n_b <- 10
+p_b <- 0.7
+
+mu_b <- n_b * p_b
+var_b <- n_b * p_b * (1 - p_b)
+sd_media_b <- sqrt(var_b / n_tcl)
+
+medias_b <- replicate(k_tcl, mean(rbinom(n_tcl, n_b, p_b)))
+df_b <- data.frame(medias = medias_b)
+
+g_hist_b <- ggplot(df_b, aes(x = medias)) +
+  geom_histogram(aes(y = after_stat(density)), binwidth = ancho_hist(medias_b, n_tcl),
+                 center = 0, fill = "#4DD0E1", color = "white", alpha = 0.9) +
+  geom_density(aes(color = "Densidad de las medias simuladas"), linewidth = 1.2) +
+  stat_function(aes(color = "Normal teórica N(7, 0.07)"), fun = dnorm,
+                args = list(mean = mu_b, sd = sd_media_b), linewidth = 1.2, linetype = "dashed") +
+  scale_color_manual(values = c("Densidad de las medias simuladas" = "#E53935",
+                                "Normal teórica N(7, 0.07)" = "#43A047")) +
+  labs(title = "Distribución de las medias muestrales",
+       subtitle = "1000 muestras de tamaño 30 de una Binomial(10, 0.7)",
+       x = "Media muestral", y = "Densidad", color = NULL) +
+  tema_ej +
+  theme(legend.position = "bottom")
+
+g_qq_b <- ggplot(df_b, aes(sample = medias)) +
+  stat_qq(color = "#7E57C2", alpha = 0.7) +
+  stat_qq_line(color = "#FB8C00", linewidth = 1.2) +
+  labs(title = "Gráfica Q-Q",
+       subtitle = "Si los puntos siguen la línea, las medias son casi normales",
+       x = "Cuantiles teóricos", y = "Cuantiles de las medias") +
+  tema_ej
+
+grid.arrange(g_hist_b, g_qq_b, ncol = 2)
+
+data.frame(
+  Medida = c("Media de las medias", "Varianza de las medias", "Desviación estándar de las medias"),
+  Teórico = c(mu_b, var_b / n_tcl, sd_media_b),
+  Simulado = c(mean(medias_b), var(medias_b), sd(medias_b))
+) |>
+  kable(digits = 4, caption = "Medias muestrales: valores teóricos contra simulados") |>
+  kable_styling(bootstrap_options = "striped")
+```
+
+**Conclusión:** La media de las 1000 medias muestrales salió `r round(mean(medias_b), 3)` (la teórica es 7) y su varianza `r round(var(medias_b), 4)` (la teórica es 0.07). El histograma tiene forma de campana, la curva roja casi se encima con la verde y los puntos de la gráfica Q-Q quedan sobre la línea. Entonces las medias se comportan como una normal, aunque los datos originales vengan de una binomial. Esto es lo que dice el Teorema Central del Límite.

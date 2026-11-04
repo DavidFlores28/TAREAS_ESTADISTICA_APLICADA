@@ -1,0 +1,479 @@
+---
+title: "Distribución Hipergeométrica"
+lang: es
+---
+
+```{=html}
+<style>
+main.content {
+text-align: justify}
+</style>
+```
+
+```{r}
+#| label: setup
+#| include: false
+
+library(tidyverse)
+library(kableExtra)
+library(gridExtra)
+library(tidyr)
+
+# Tema común para las gráficas
+tema_ej <- theme_minimal() +
+  theme(
+    legend.title = element_text(size=13, face="bold"),
+    legend.text = element_text(size=13),
+    plot.title = element_text(size=15, face="bold", hjust = 0.5),
+    plot.subtitle = element_text(size=13, hjust = 0.5),
+    axis.text.x=element_text(size=12),
+    axis.text.y=element_text(size=12),
+    axis.title.x = element_text(face="bold", size=13),
+    axis.title.y = element_text(face="bold", size=13)
+  )
+
+# Ancho de barra para los histogramas de medias muestrales.
+# Las medias de n enteros avanzan de 1/n en 1/n, así que se usa un múltiplo
+# impar de 1/n para que las barras no queden con huecos.
+ancho_hist <- function(medias, n, barras = 25) {
+  paso <- 1 / n
+  m <- ceiling(diff(range(medias)) / barras / paso)
+  if (m %% 2 == 0) m <- m + 1
+  m * paso
+}
+```
+
+La **distribución hipergeométrica** modela el número de elementos de cierto tipo que se obtienen al tomar una muestra **sin reemplazo** de una población finita que tiene dos tipos de elementos. Se parece a la binomial, pero aquí las extracciones no son independientes: cada vez que se saca un elemento cambia la composición de lo que queda en la población.
+
+::: {#def-hipergeometrica}
+Supongamos que tenemos una población de $N$ objetos, de los cuales $K$ son de una primera clase y $N-K$ son de una segunda clase. Se extraen al azar y sin reemplazo $n$ objetos. Sea $X$ el número de objetos de la primera clase que hay en la muestra. Entonces $X$ tiene **distribución hipergeométrica** y su función de probabilidad es
+
+$$f(x) = \frac{\binom{K}{x}\binom{N-K}{n-x}}{\binom{N}{n}} \quad \text{para } x = \max\{0,\, n-N+K\}, \ldots, \min\{K,\, n\}$$
+
+y $f(x)=0$ en otro caso. Una variable aleatoria con esta distribución se denota como $X \sim \text{hip}(N, K, n)$.
+:::
+
+La fórmula sale de contar casos: hay $\binom{N}{n}$ muestras posibles de tamaño $n$; de ellas, las que tienen exactamente $x$ objetos de la primera clase se forman escogiendo $x$ de los $K$ objetos de la primera clase y los $n-x$ restantes de los $N-K$ de la segunda clase. Los valores posibles de $x$ están limitados porque no se pueden sacar más de $K$ objetos de la primera clase, ni más de $n$ en total, ni más de $N-K$ de la segunda clase (esto último pide que $x \geq n-N+K$).
+
+## Características de la Distribución Hipergeométrica
+
+**Parámetros**
+
+- $N$: tamaño de la población (entero positivo)
+- $K$: número de objetos de la primera clase en la población, con $0 \leq K \leq N$
+- $n$: tamaño de la muestra, con $1 \leq n \leq N$
+
+**Parámetros Estadísticos**
+
+Esperanza (Media): $$E(X) = n\,\frac{K}{N}$$
+
+Varianza: $$\text{Var}(X) = n\,\frac{K}{N}\left(1-\frac{K}{N}\right)\frac{N-n}{N-1}$$
+
+Desviación Estándar: $$\sigma = \sqrt{n\,\frac{K}{N}\left(1-\frac{K}{N}\right)\frac{N-n}{N-1}}$$
+
+**Función de Distribución (Probabilidad Acumulada)**: $$F(x) = P(X \leq x) = \sum_{i=\max\{0,\,n-N+K\}}^{x} \frac{\binom{K}{i}\binom{N-K}{n-i}}{\binom{N}{n}}$$
+
+Si $p = K/N$ es la proporción de objetos de la primera clase, la media es $np$ (igual que en la binomial) y la varianza es la de la binomial, $np(1-p)$, multiplicada por el factor $\frac{N-n}{N-1}$. Ese factor se llama **corrección por población finita** y siempre es menor o igual que 1, así que sacar sin reemplazo da menos variabilidad que sacar con reemplazo.
+
+**Uso en R**
+
+R tiene las funciones `dhyper`, `phyper`, `qhyper` y `rhyper`, pero usan otros nombres para los parámetros, por eso hay que tener cuidado:
+
+| Nuestra notación | Significado | Argumento en R |
+|:----------------:|:------------|:--------------:|
+| $K$ | objetos de la primera clase | `m` |
+| $N-K$ | objetos de la segunda clase | `n` |
+| $n$ | tamaño de la muestra | `k` |
+
+Por ejemplo, $f(x)$ se calcula con `dhyper(x, m = K, n = N - K, k = n)`.
+
+## Deducción de la media y la varianza
+
+Sea $I_i = 1$ si el $i$-ésimo objeto extraído es de la primera clase y $I_i = 0$ si no lo es. Entonces
+
+$$X = I_1 + I_2 + \cdots + I_n.$$
+
+Por simetría, cualquier objeto de la muestra tiene la misma probabilidad de ser de la primera clase: $P(I_i = 1) = \frac{K}{N}$. Llamemos $p = \frac{K}{N}$. Cada $I_i$ es una variable de Bernoulli, entonces $E(I_i) = p$ y $Var(I_i) = p(1-p)$. Luego
+
+$$E(X) = \sum_{i=1}^n E(I_i) = np.$$
+
+Para la varianza hay que considerar la covarianza entre dos extracciones distintas $i \neq j$. La probabilidad de que las dos sean de la primera clase es $P(I_i=1, I_j=1) = \frac{K}{N}\cdot\frac{K-1}{N-1}$, y entonces
+
+$$Cov(I_i, I_j) = \frac{K(K-1)}{N(N-1)} - \frac{K^2}{N^2} = -\frac{p(1-p)}{N-1}.$$
+
+Usando la propiedad de la varianza de una suma (hay $n$ varianzas y $n(n-1)$ pares ordenados $i \neq j$):
+
+$$Var(X) = n\,p(1-p) + n(n-1)\left(-\frac{p(1-p)}{N-1}\right) = n\,p(1-p)\left[1 - \frac{n-1}{N-1}\right] = n\,p(1-p)\,\frac{N-n}{N-1}.$$
+
+## Ejemplo Básico
+
+::: {#exm-hip_lote}
+### Inspección de un lote
+
+Un lote tiene $N=50$ piezas y $K=8$ de ellas son defectuosas. Para revisar el lote se sacan al azar $n=10$ piezas, sin devolverlas. Sea $X$ el número de piezas defectuosas en la muestra, entonces $X\sim \text{hip}(50, 8, 10)$.
+
+a) ¿Cuál es la probabilidad de encontrar exactamente 2 piezas defectuosas?
+
+b) ¿Cuál es la probabilidad de encontrar a lo más 1 pieza defectuosa?
+
+c) ¿Cuál es la probabilidad de encontrar al menos 3 piezas defectuosas?
+
+```{r}
+#| label: ejemplo-basico-hip
+#| code-fold: true
+
+# Parámetros
+N_h <- 50
+K_h <- 8
+n_h <- 10
+
+# a) P(X = 2) con la fórmula
+prob_2 <- choose(K_h, 2) * choose(N_h - K_h, n_h - 2) / choose(N_h, n_h)
+cat("a) P(X = 2) =", round(prob_2, 4), "\n")
+cat("   Verificación con dhyper:", round(dhyper(2, m = K_h, n = N_h - K_h, k = n_h), 4), "\n\n")
+
+# b) P(X <= 1)
+prob_menos_1 <- phyper(1, m = K_h, n = N_h - K_h, k = n_h)
+cat("b) P(X ≤ 1) =", round(prob_menos_1, 4), "\n\n")
+
+# c) P(X >= 3) = 1 - P(X <= 2)
+prob_mas_3 <- 1 - phyper(2, m = K_h, n = N_h - K_h, k = n_h)
+cat("c) P(X ≥ 3) =", round(prob_mas_3, 4), "\n\n")
+
+# Parámetros estadísticos
+media_h <- n_h * K_h / N_h
+varianza_h <- n_h * (K_h / N_h) * (1 - K_h / N_h) * (N_h - n_h) / (N_h - 1)
+desv_h <- sqrt(varianza_h)
+
+cat("Parámetros estadísticos:\n")
+cat("Media:", media_h, "\n")
+cat("Varianza:", round(varianza_h, 4), "\n")
+cat("Desviación estándar:", round(desv_h, 4), "\n")
+```
+
+```{r}
+#| label: tabla-ejemplo-hip
+#| code-fold: true
+
+x_ej <- 0:min(K_h, n_h)
+
+tabla_ej <- data.frame(
+  x = x_ej,
+  prob = dhyper(x_ej, m = K_h, n = N_h - K_h, k = n_h),
+  acum = phyper(x_ej, m = K_h, n = N_h - K_h, k = n_h)
+)
+
+kable(tabla_ej, digits = 4, align = "ccc",
+      col.names = c("x", "P(X = x)", "P(X ≤ x)"),
+      caption = "Distribución hipergeométrica hip(50, 8, 10)") %>%
+  kable_styling(bootstrap_options = "striped")
+```
+
+**Visualización**
+
+```{r}
+#| label: grafico-ejemplo-hip
+#| code-fold: true
+#| fig-align: center
+
+tabla_ej$caso <- ifelse(tabla_ej$x <= 1, "X ≤ 1", ifelse(tabla_ej$x == 2, "X = 2", "X ≥ 3"))
+tabla_ej$caso <- factor(tabla_ej$caso, levels = c("X ≤ 1", "X = 2", "X ≥ 3"))
+
+ggplot(tabla_ej, aes(x = x, y = prob, fill = caso)) +
+  geom_col(width = 0.8, alpha = 0.9) +
+  geom_text(aes(label = round(prob, 3)), vjust = -0.5, size = 3.5) +
+  geom_vline(xintercept = media_h, color = "#212121", linetype = "dashed", linewidth = 1) +
+  annotate("label", x = media_h + 1.6, y = max(tabla_ej$prob) * 0.9,
+           label = paste("E(X) =", media_h), fill = "#212121", color = "white", fontface = "bold") +
+  scale_fill_manual(values = c("X ≤ 1" = "#42A5F5", "X = 2" = "#EF5350", "X ≥ 3" = "#FFA726")) +
+  scale_x_continuous(breaks = x_ej) +
+  labs(title = "Distribución hipergeométrica hip(50, 8, 10)",
+       subtitle = "Número de piezas defectuosas en la muestra",
+       x = "Piezas defectuosas en la muestra", y = "Probabilidad", fill = "Evento") +
+  tema_ej
+```
+:::
+
+## Comparación: Efecto de los Parámetros
+
+A continuación se explora cómo cambia la distribución hipergeométrica al modificar los parámetros. La línea negra punteada marca la media de cada distribución.
+
+### Efecto del parámetro $K$ (con $N=50$ y $n=10$ fijos)
+
+```{r}
+#| label: efecto-K-hip
+#| code-fold: true
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 5
+
+N_c <- 50
+n_c <- 10
+K_vals <- c(5, 10, 20, 30)
+
+datos_K <- do.call(rbind, lapply(K_vals, function(K) {
+  x <- 0:n_c
+  data.frame(x = x, prob = dhyper(x, m = K, n = N_c - K, k = n_c),
+             K = paste("K =", K), media = n_c * K / N_c)
+}))
+datos_K$K <- factor(datos_K$K, levels = paste("K =", K_vals))
+
+ggplot(datos_K, aes(x = x, y = prob, fill = K)) +
+  geom_col(width = 0.8, alpha = 0.9) +
+  geom_vline(aes(xintercept = media), color = "#212121", linetype = "dashed", linewidth = 1) +
+  facet_wrap(~K, ncol = 2) +
+  scale_fill_manual(values = c("#EF5350", "#FFA726", "#66BB6A", "#42A5F5"), guide = "none") +
+  scale_x_continuous(breaks = 0:n_c) +
+  labs(title = "Efecto del parámetro K (N = 50, n = 10)",
+       subtitle = "Al aumentar K hay más objetos de la primera clase y la distribución se mueve a la derecha",
+       x = "x", y = "Probabilidad") +
+  tema_ej
+```
+
+### Efecto del parámetro $n$ (con $N=50$ y $K=15$ fijos)
+
+```{r}
+#| label: efecto-n-hip
+#| code-fold: true
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 5
+
+N_c2 <- 50
+K_c2 <- 15
+n_vals <- c(5, 10, 20, 30)
+
+datos_n <- do.call(rbind, lapply(n_vals, function(n) {
+  x <- 0:K_c2
+  data.frame(x = x, prob = dhyper(x, m = K_c2, n = N_c2 - K_c2, k = n),
+             n = paste("n =", n), media = n * K_c2 / N_c2)
+}))
+datos_n$n <- factor(datos_n$n, levels = paste("n =", n_vals))
+
+ggplot(datos_n, aes(x = x, y = prob, fill = n)) +
+  geom_col(width = 0.8, alpha = 0.9) +
+  geom_vline(aes(xintercept = media), color = "#212121", linetype = "dashed", linewidth = 1) +
+  facet_wrap(~n, ncol = 2) +
+  scale_fill_manual(values = c("#AB47BC", "#26C6DA", "#9CCC65", "#FF7043"), guide = "none") +
+  scale_x_continuous(breaks = 0:K_c2) +
+  labs(title = "Efecto del parámetro n (N = 50, K = 15)",
+       subtitle = "Al aumentar el tamaño de la muestra se esperan más objetos de la primera clase",
+       x = "x", y = "Probabilidad") +
+  tema_ej
+```
+
+### Tabla comparativa de parámetros estadísticos
+
+```{r}
+#| label: tabla-comparativa-hip
+#| code-fold: true
+
+combos <- data.frame(
+  N = c(50, 50, 50, 100, 100, 100),
+  K = c(10, 20, 30, 30, 30, 30),
+  n = c(10, 10, 10, 10, 20, 40)
+)
+
+combos$Media <- combos$n * combos$K / combos$N
+combos$Varianza <- combos$n * (combos$K / combos$N) * (1 - combos$K / combos$N) *
+  (combos$N - combos$n) / (combos$N - 1)
+combos$Desv_Std <- sqrt(combos$Varianza)
+
+kable(combos, digits = 4,
+      col.names = c("N", "K", "n", "Media", "Varianza", "Desv. Estándar"),
+      caption = "Parámetros estadísticos para diferentes valores de N, K y n") %>%
+  kable_styling(bootstrap_options = "striped")
+```
+
+## Relación con la Distribución Binomial
+
+Si la población es muy grande comparada con la muestra, sacar sin reemplazo casi no cambia la composición de la población, y la hipergeométrica se parece a una binomial con $p = K/N$:
+
+$$\text{hip}(N, K, n) \approx \text{Binomial}\left(n, \frac{K}{N}\right) \quad \text{cuando } N \text{ es grande respecto a } n.$$
+
+En la siguiente gráfica se mantiene $K/N = 0.3$ y $n=10$, y se aumenta $N$. Las barras son la hipergeométrica y la línea rosa es la binomial $(10, 0.3)$.
+
+```{r}
+#| label: hip-binomial
+#| code-fold: true
+#| fig-align: center
+#| fig-width: 10
+#| fig-height: 5
+
+n_b <- 10
+p_b <- 0.3
+N_vals <- c(20, 50, 100, 500)
+
+datos_hb <- do.call(rbind, lapply(N_vals, function(N) {
+  K <- p_b * N
+  x <- 0:n_b
+  data.frame(x = x, hip = dhyper(x, m = K, n = N - K, k = n_b),
+             bin = dbinom(x, n_b, p_b), N = paste("N =", N, " (K =", K, ")"))
+}))
+datos_hb$N <- factor(datos_hb$N, levels = unique(datos_hb$N))
+
+ggplot(datos_hb, aes(x = x)) +
+  geom_col(aes(y = hip, fill = N), width = 0.8, alpha = 0.9) +
+  geom_line(aes(y = bin), color = "#D81B60", linewidth = 1.1) +
+  geom_point(aes(y = bin), color = "#D81B60", size = 2) +
+  facet_wrap(~N, ncol = 2) +
+  scale_fill_manual(values = c("#EF5350", "#FFA726", "#66BB6A", "#42A5F5"), guide = "none") +
+  scale_x_continuous(breaks = 0:n_b) +
+  labs(title = "Hipergeométrica contra Binomial(10, 0.3)",
+       subtitle = "Al crecer N las barras se acercan a la línea rosa",
+       x = "x", y = "Probabilidad") +
+  tema_ej
+```
+
+```{r}
+#| label: hip-binomial-varianza
+#| code-fold: true
+
+tabla_hb <- data.frame(
+  N = N_vals,
+  K = p_b * N_vals,
+  Var_hip = n_b * p_b * (1 - p_b) * (N_vals - n_b) / (N_vals - 1),
+  Var_bin = n_b * p_b * (1 - p_b),
+  Factor = (N_vals - n_b) / (N_vals - 1)
+)
+
+kable(tabla_hb, digits = 4,
+      col.names = c("N", "K", "Varianza hipergeométrica", "Varianza binomial", "Factor (N-n)/(N-1)"),
+      caption = "La varianza hipergeométrica se acerca a la binomial al crecer N") %>%
+  kable_styling(bootstrap_options = "striped")
+```
+
+## Simulación de Valores y Comparación con la Teórica
+
+Se simulan 10,000 valores de una variable aleatoria $X\sim \text{hip}(N=100, K=30, n=15)$ y se comparan con los valores teóricos.
+
+```{r}
+#| label: simulacion-hip
+#| code-fold: true
+#| fig-align: center
+
+set.seed(2026)
+N_s <- 100
+K_s <- 30
+n_s <- 15
+n_sim_h <- 10000
+
+sim_h <- rhyper(n_sim_h, m = K_s, n = N_s - K_s, k = n_s)
+
+# Valores teóricos
+media_teo_h <- n_s * K_s / N_s
+var_teo_h <- n_s * (K_s / N_s) * (1 - K_s / N_s) * (N_s - n_s) / (N_s - 1)
+desv_teo_h <- sqrt(var_teo_h)
+
+comparacion_h <- data.frame(
+  Estadística = c("Media", "Varianza", "Desv. Estándar"),
+  Teórica = c(media_teo_h, var_teo_h, desv_teo_h),
+  Simulada = c(mean(sim_h), var(sim_h), sd(sim_h))
+)
+comparacion_h$Diferencia <- abs(comparacion_h$Teórica - comparacion_h$Simulada)
+
+kable(comparacion_h, digits = 4,
+      caption = "Comparación teórica contra simulada (N = 100, K = 30, n = 15)") %>%
+  kable_styling(bootstrap_options = "striped")
+
+# Comparación de las distribuciones
+x_s <- 0:min(K_s, n_s)
+
+df_sim_h <- data.frame(
+  x = rep(x_s, 2),
+  prob = c(dhyper(x_s, m = K_s, n = N_s - K_s, k = n_s),
+           as.numeric(table(factor(sim_h, levels = x_s))) / n_sim_h),
+  tipo = rep(c("Teórica", "Simulada"), each = length(x_s))
+)
+
+ggplot(df_sim_h, aes(x = x, y = prob, fill = tipo)) +
+  geom_col(position = "dodge", width = 0.8, alpha = 0.9) +
+  scale_fill_manual(values = c("Teórica" = "#1E88E5", "Simulada" = "#FF7043")) +
+  scale_x_continuous(breaks = x_s) +
+  labs(title = "Distribución Hipergeométrica: teórica contra simulada",
+       subtitle = "hip(100, 30, 15) con 10,000 simulaciones",
+       x = "x", y = "Probabilidad / Frecuencia relativa", fill = "Distribución") +
+  tema_ej
+```
+
+## Teorema Central del Límite
+
+Se generan $k=1000$ muestras de tamaño $m=40$ de una variable $X\sim \text{hip}(100, 30, 15)$ (se usa $m$ para el tamaño de la muestra, porque $n$ ya es el número de objetos que se extraen). Para esta distribución:
+
+\begin{equation}
+\mu = n\frac{K}{N} = 15\cdot 0.3 = 4.5, \qquad \sigma^2 = 15\,(0.3)(0.7)\,\frac{85}{99} \approx 2.7045
+\end{equation}
+
+Entonces la media muestral
+
+\begin{equation}
+\bar{X}_{40} = \frac{1}{40}\sum_{i=1}^{40} X_i
+\end{equation}
+
+tendrá aproximadamente la siguiente distribución:
+
+\begin{equation}
+\bar{X}_{40} \sim N\left(4.5, \frac{2.7045}{40}\right) \approx N(4.5, 0.0676)
+\end{equation}
+
+```{r}
+#| label: tcl-hip
+#| code-fold: true
+#| fig-align: center
+#| fig-width: 11
+#| fig-height: 5
+
+set.seed(2026)
+k_tcl_h <- 1000
+m_tcl_h <- 40
+
+sd_media_h <- sqrt(var_teo_h / m_tcl_h)
+
+medias_h <- replicate(k_tcl_h, mean(rhyper(m_tcl_h, m = K_s, n = N_s - K_s, k = n_s)))
+df_medias_h <- data.frame(medias = medias_h)
+
+g_hist_h <- ggplot(df_medias_h, aes(x = medias)) +
+  geom_histogram(aes(y = after_stat(density)), binwidth = ancho_hist(medias_h, m_tcl_h),
+                 center = 0, fill = "#80DEEA", color = "white", alpha = 0.9) +
+  geom_density(aes(color = "Densidad de las medias simuladas"), linewidth = 1.2) +
+  stat_function(aes(color = "Normal teórica N(4.5, 0.0676)"), fun = dnorm,
+                args = list(mean = media_teo_h, sd = sd_media_h), linewidth = 1.2, linetype = "dashed") +
+  scale_color_manual(values = c("Densidad de las medias simuladas" = "#E53935",
+                                "Normal teórica N(4.5, 0.0676)" = "#7B1FA2")) +
+  labs(title = "Distribución de las medias muestrales",
+       subtitle = "1000 muestras de tamaño 40 de una hip(100, 30, 15)",
+       x = "Media muestral", y = "Densidad", color = NULL) +
+  tema_ej +
+  theme(legend.position = "bottom")
+
+g_qq_h <- ggplot(df_medias_h, aes(sample = medias)) +
+  stat_qq(color = "#26A69A", alpha = 0.7) +
+  stat_qq_line(color = "#FB8C00", linewidth = 1.2) +
+  labs(title = "Gráfica Q-Q",
+       subtitle = "Si los puntos siguen la línea, las medias son casi normales",
+       x = "Cuantiles teóricos", y = "Cuantiles de las medias") +
+  tema_ej
+
+grid.arrange(g_hist_h, g_qq_h, ncol = 2)
+
+# Estadísticas
+cat("Media teórica:", media_teo_h, "\n")
+cat("Media observada:", round(mean(medias_h), 4), "\n")
+cat("Varianza teórica de la media:", round(var_teo_h / m_tcl_h, 4), "\n")
+cat("Varianza observada de la media:", round(var(medias_h), 4), "\n")
+```
+
+Las medias muestrales forman una campana centrada en 4.5 y la curva normal teórica se ajusta bien al histograma. Los puntos de la gráfica Q-Q quedan sobre la línea. Entonces se cumple el Teorema Central del Límite también para la distribución hipergeométrica.
+
+## Aplicaciones Prácticas
+
+La distribución hipergeométrica aparece siempre que se toma una muestra sin reemplazo de una población con dos tipos de elementos:
+
+1.  **Control de calidad**: piezas defectuosas en una muestra tomada de un lote.
+2.  **Loterías y juegos de cartas**: aciertos en un sorteo o número de cartas de un palo en una mano.
+3.  **Encuestas y muestreo**: personas con cierta característica en una muestra tomada de una población pequeña.
+4.  **Biología**: estimación del tamaño de una población de animales con el método de captura y recaptura.
+
+## Referencia
+
+- Rincón, Luis (2014). *Introducción a la Probabilidad*. Facultad de Ciencias, UNAM.
